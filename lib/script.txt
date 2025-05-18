@@ -1,0 +1,29 @@
+This project use dart with Postgres
+
+/// first 
+
+create database in pgAdmin4  then create table in database
+
+//// script for create table
+
+CREATE TABLE tbl_user (
+  id SERIAL PRIMARY KEY,
+  first_name VARCHAR(100),
+  last_name VARCHAR(100),
+  image TEXT
+);
+
+
+//// script for insert data of user
+
+INSERT INTO tbl_user (last_name, first_name, image) VALUES
+  ('Thorne', 'Alaric', '1737796516931211.png'),
+  ('Branford', 'Eulalia', '1737796516931222.png'),
+  ('Fenwick', 'Merrick', '1737796516931233.png'),
+  ('Hatherleigh', 'Isolde', '1737796516931244.png'),
+  ('Redgrave', 'Quentin', '1737796516931255.png'),
+  ('Blackwood', 'Elspeth', '1737796516931266.png'),
+  ('Cavendish', 'Benedict', '1737796516931277.png'),
+  ('Draycott', 'Verity', '1737796516931288.png'),
+  ('Eversley', 'Crispin', '1737796516931299.png'),
+  ('Gillingham', 'Seraphina', '1737796516931300.png');
