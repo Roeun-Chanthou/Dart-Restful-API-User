@@ -23,12 +23,12 @@ class UserControllerPostgres {
 
       var result = await ConnectionPostgres.db.mappedResultsQuery(
         '''
-    SELECT 
+    SELECT
       id::integer,
-      first_name, 
-      last_name, 
-      image 
-    FROM $tableName 
+      first_name,
+      last_name,
+      image
+    FROM $tableName
     ORDER BY id ASC  -- Changed from DESC to ASC
     OFFSET @offset LIMIT @limit
     ''',
@@ -44,6 +44,43 @@ class UserControllerPostgres {
             request,
           ),
         ),
+        headers: {'content-type': 'application/json'},
+      );
+    } catch (e, stack) {
+      print('Select users error: $e\n$stack');
+      return Response.internalServerError(
+        body: jsonEncode({
+          'status': 'error',
+          'message': 'Failed to fetch users',
+        }),
+      );
+    }
+  }
+
+  static Future<Response> selectUserById(Request request, String userId) async {
+    final id = int.tryParse(userId);
+    if (id == null) {
+      return Response.badRequest(
+        body: jsonEncode({'status': 'error', 'message': 'Invalid user id'}),
+      );
+    }
+    try {
+      var result = await ConnectionPostgres.db.mappedResultsQuery(
+        '''
+    SELECT
+      id::integer,
+      first_name,
+      last_name,
+      image
+    FROM $tableName
+    WHERE id = @id
+    ''',
+        substitutionValues: {'id': id},
+      );
+
+      var user = result.first[tableName]!;
+      return Response.ok(
+        jsonEncode(UserResource.mapData(user, request)),
         headers: {'content-type': 'application/json'},
       );
     } catch (e, stack) {
@@ -355,20 +392,54 @@ class UserControllerPostgres {
     }
   }
 
+  // static Future<Response> selectUserImage(
+  //   Request request,
+  //   String fileName,
+  // ) async {
+  //   var file = File("public/images/users/$fileName");
+  //   if (!file.existsSync()) {
+  //     return Response.notFound('File not found');
+  //   }
+
+  //   return Response.ok(
+  //     await file.readAsBytes(),
+  //     headers: {
+  //       'content-type': lookupMimeType(fileName) ?? 'application/octet-stream',
+  //     },
+  //   );
+  // }
+
   static Future<Response> selectUserImage(
     Request request,
     String fileName,
   ) async {
-    var file = File("public/images/users/$fileName");
-    if (!file.existsSync()) {
-      return Response.notFound('File not found');
-    }
+    try {
+      // Sanitize the filename to prevent path traversal
+      final sanitizedFileName = fileName.split('/').last;
+      final file = File('$imagesDirectory$sanitizedFileName');
 
-    return Response.ok(
-      await file.readAsBytes(),
-      headers: {
-        'content-type': lookupMimeType(fileName) ?? 'application/octet-stream',
-      },
-    );
+      print('Attempting to serve image from: ${file.path}');
+
+      if (!await file.exists()) {
+        print('Image not found: ${file.path}');
+        return Response.notFound('Image not found');
+      }
+
+      final bytes = await file.readAsBytes();
+      final mimeType =
+          lookupMimeType(sanitizedFileName) ?? 'application/octet-stream';
+
+      return Response.ok(
+        bytes,
+        headers: {
+          'content-type': mimeType,
+          'cache-control': 'public, max-age=3600',
+          'access-control-allow-origin': '*',
+        },
+      );
+    } catch (e, stack) {
+      print('Error serving image: $e\n$stack');
+      return Response.internalServerError(body: 'Error reading image file');
+    }
   }
 }

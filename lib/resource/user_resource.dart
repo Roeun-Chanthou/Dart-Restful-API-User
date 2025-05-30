@@ -14,7 +14,7 @@ class UserResource {
       if (imageName is List) {
         imageName = String.fromCharCodes(imageName.cast<int>());
       }
-      imageUrl = '$host/user/profile/$imageName';
+      imageUrl = '$host/api/user/profile/$imageName';
     }
     return {
       'id': data['id'],
